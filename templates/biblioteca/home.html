@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Início - Sistema de Empréstimos{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Banner -->
+        <div class="jumbotron bg-light p-5 rounded mb-4">
+            <h1 class="display-4">Bem-vindo ao Sistema de Empréstimos!</h1>
+            <p class="lead">Gerencie empréstimos de livros de forma simples, rápida e eficiente.</p>
+            <hr class="my-4">
+            
+            {% if not user.is_authenticated %}
+            <p>Cadastre-se agora e comece a usar o sistema!</p>
+            <a class="btn btn-primary btn-lg" href="{% url 'usuarios:cadastrar' %}">
+                <i class="fas fa-user-plus"></i> Cadastre-se Gratuitamente
+            </a>
+            {% else %}
+            <p>Explore nosso acervo ou verifique seus empréstimos.</p>
+            <div class="d-flex gap-2">
+                <a class="btn btn-primary btn-lg" href="{% url 'biblioteca:listar_livros' %}">
+                    <i class="fas fa-book-open"></i> Explorar Livros
+                </a>
+                <a class="btn btn-outline-primary btn-lg" href="{% url 'biblioteca:meus_emprestimos' %}">
+                    <i class="fas fa-book-reader"></i> Meus Empréstimos
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Livros Recentes -->
+        <h3 class="mb-3">Livros Recentes</h3>
+        <div class="row">
+            {% for livro in livros_recentes %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if livro.capa %}
+                    <img src="{{ livro.capa.url }}" class="card-img-top" alt="{{ livro.titulo }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="fas fa-book fa-4x text-secondary"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ livro.titulo|truncatechars:30 }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ livro.autor.nome }}</h6>
+                        
+                        <div class="mb-3">
+                            <span class="badge bg-{% if livro.status == 'disponivel' %}success{% elif livro.status == 'emprestado' %}danger{% else %}warning{% endif %}">
+                                {{ livro.get_status_display }}
+                            </span>
+                            <small class="text-muted">Disponíveis: {{ livro.quantidade_disponivel }}/{{ livro.quantidade_total }}</small>
+                        </div>
+                        
+                        <p class="card-text">{{ livro.descricao|truncatechars:80 }}</p>
+                        
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'biblioteca:detalhes_livro' livro.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-info-circle"></i> Detalhes
+                            </a>
+                            
+                            {% if livro.pode_ser_emprestado and user.is_authenticated %}
+                            <a href="{% url 'biblioteca:solicitar_emprestimo' livro.id %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-handshake"></i> Emprestar
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Nenhum livro cadastrado no sistema.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Categorias -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tags"></i> Categorias</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for categoria in categorias %}
+                    <a href="{% url 'biblioteca:listar_livros' %}?categoria={{ categoria.id }}" 
+                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        {{ categoria.nome }}
+                        <span class="badge bg-primary rounded-pill">{{ categoria.livro_set.count }}</span>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-muted">Nenhuma categoria cadastrada</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Estatísticas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="display-6 text-primary">{{ livros_recentes.count }}</div>
+                        <small class="text-muted">Livros Disponíveis</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="display-6 text-success">{{ categorias.count }}</div>
+                        <small class="text-muted">Categorias</small>
+                    </div>
+                </div>
+                
+                {% if user.is_authenticated %}
+                <hr>
+                <h6>Seus Empréstimos</h6>
+                <div class="row text-center">
+                    <div class="col-6">
+                        {% with emprestimos_ativos=user.emprestimos.all %}
+                        <div class="display-6 text-warning">
+                            {% with ativos=0 %}
+                                {% for emprestimo in emprestimos_ativos %}
+                                    {% if emprestimo.status in "ativo,renovado,atrasado" %}
+                                        {% with ativos=ativos|add:1 %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ ativos }}
+                            {% endwith %}
+                        </div>
+                        <small class="text-muted">Ativos</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="display-6 text-info">{{ user.emprestimos.count }}</div>
+                        <small class="text-muted">Total</small>
+                    </div>
+                </div>
+                {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Ações Rápidas -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'biblioteca:listar_livros' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-search"></i> Buscar Livros
+                    </a>
+                    
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'biblioteca:meus_emprestimos' %}" class="btn btn-outline-success">
+                        <i class="fas fa-list"></i> Ver Meus Empréstimos
+                    </a>
+                    <a href="{% url 'biblioteca:minhas_reservas' %}" class="btn btn-outline-info">
+                        <i class="fas fa-calendar-check"></i> Minhas Reservas
+                    </a>
+                    {% else %}
+                    <a href="{% url 'usuarios:login' %}" class="btn btn-outline-success">
+                        <i class="fas fa-sign-in-alt"></i> Acessar Minha Conta
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
