@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Cadastro de Usuário{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="text-center mb-4">Cadastro de Usuário</h2>
+            
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ field }}
+                            
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                            <div class="text-danger small">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">Cadastrar</button>
+                            <a href="{% url 'usuarios:login' %}" class="btn btn-outline-secondary">
+                                Voltar para Login
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <p class="text-muted">
+                    Ao se cadastrar, você concorda com nossos 
+                    <a href="#" class="text-decoration-none">Termos de Uso</a> e 
+                    <a href="#" class="text-decoration-none">Política de Privacidade</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+    
+    .form-control {
+        border-radius: 5px;
+        padding: 10px;
+    }
+    
+    .btn {
+        border-radius: 5px;
+        padding: 10px;
+    }
+    
+    h2 {
+        color: #2c3e50;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Livros - Sistema de Empréstimos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Catálogo de Livros</h1>
+    
+    <!-- Barra de Pesquisa Simples -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="get" class="input-group">
+                <input type="text" name="q" class="form-control" 
+                       placeholder="Buscar livros..." value="{{ pesquisa|default:'' }}">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <select name="categoria" class="form-select" onchange="this.form.submit()">
+                <option value="">Todas as Categorias</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.id }}" 
+                        {% if categoria_selecionada == categoria.id|stringformat:"i" %}selected{% endif %}>
+                    {{ categoria.nome }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <!-- Lista de Livros -->
+    {% if livros %}
+    <div class="row">
+        {% for livro in livros %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ livro.titulo }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ livro.autor.nome }}</h6>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-{% if livro.status == 'disponivel' %}success{% else %}warning{% endif %}">
+                            {{ livro.get_status_display }}
+                        </span>
+                        <small class="text-muted">Disponíveis: {{ livro.quantidade_disponivel }}/{{ livro.quantidade_total }}</small>
+                    </div>
+                    
+                    <p class="card-text">{{ livro.descricao|truncatechars:100 }}</p>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'biblioteca:detalhes_livro' livro.id %}" class="btn btn-sm btn-outline-primary">
+                            Detalhes
+                        </a>
+                        
+                        {% if user.is_authenticated and livro.pode_ser_emprestado %}
+                        <a href="{% url 'biblioteca:solicitar_emprestimo' livro.id %}" class="btn btn-sm btn-primary">
+                            Emprestar
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Nenhum livro encontrado.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
